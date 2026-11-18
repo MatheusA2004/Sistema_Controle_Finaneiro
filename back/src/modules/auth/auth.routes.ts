@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import argon2 from "argon2";
 import { registerSchema, loginSchema } from "./auth.schemas.js";
+import { DEFAULT_CATEGORIES } from "../categories/categories.service.js";
 
 export default async function authRoutes(app: FastifyInstance) {
   app.post("/register", async (req, reply) => {
@@ -25,7 +26,12 @@ export default async function authRoutes(app: FastifyInstance) {
     const passwordHash = await argon2.hash(password);
 
     const user = await app.prisma.user.create({
-      data: { name, email, passwordHash },
+      data: {
+        name,
+        email,
+        passwordHash,
+        categories: { create: DEFAULT_CATEGORIES },
+      },
       select: { id: true, name: true, email: true, createdAt: true },
     });
 

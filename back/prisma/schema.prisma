@@ -7,6 +7,23 @@ datasource db {
   provider = "mysql"
 }
 
+// Categoria vale para receitas OU despesas (ex.: "Salário" é de receita, "Lazer" é de despesa)
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+// Receita avulsa (acontece uma vez) ou recorrente (todo mês, num dia fixo)
+enum IncomeRecurrence {
+  ONE_TIME
+  MONTHLY
+}
+
+// Despesa fixa (aluguel, internet) ou variável (mercado, lazer) — definido por você no lançamento
+enum ExpenseKind {
+  FIXED
+  VARIABLE
+}
 
 model User {
   id           String   @id @default(uuid())
@@ -16,6 +33,69 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  categories Category[]
+  incomes    Income[]
+  expenses   Expense[]
+
   @@map("users")
- 
+}
+
+model Category {
+  id        String       @id @default(uuid())
+  name      String       @db.VarChar(50)
+  type      CategoryType
+  createdAt DateTime     @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  incomes  Income[]
+  expenses Expense[]
+
+  @@unique([userId, type, name])
+  @@map("categories")
+}
+
+model Income {
+  id          String           @id @default(uuid())
+  description String           @db.VarChar(120)
+  amount      Decimal          @db.Decimal(12, 2)
+  recurrence  IncomeRecurrence @default(ONE_TIME)
+  // Avulsa: data em que o dinheiro entrou. Recorrente: data a partir da qual passa a valer.
+  date         DateTime  @db.Date
+  // Só para recorrente: dia do mês (1–31). Em meses mais curtos, usa o último dia.
+  recurringDay Int?      @db.TinyInt
+  // Só para recorrente: último dia em que ela vale (null = sem fim)
+  endDate      DateTime? @db.Date
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@map("incomes")
+}
+
+model Expense {
+  id          String      @id @default(uuid())
+  description String      @db.VarChar(120)
+  amount      Decimal     @db.Decimal(12, 2)
+  kind        ExpenseKind
+  date        DateTime    @db.Date
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Toda despesa precisa de categoria; não dá para apagar uma categoria em uso
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([userId, date])
+  @@map("expenses")
 }

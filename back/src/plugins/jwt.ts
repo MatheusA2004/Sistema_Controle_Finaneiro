@@ -28,7 +28,8 @@ export default fp(async (app) => {
     try {
       await req.jwtVerify();
     } catch {
-      reply.code(401).send({ message: "Não autenticado" });
+      // o `return` é necessário: sem ele o Fastify segue para a rota mesmo sem token válido
+      return reply.code(401).send({ message: "Não autenticado" });
     }
   });
 });

@@ -16,6 +16,9 @@ export default fp(async (app) => {
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
     connectionLimit: 5,
+    // falha em 5s com erro claro de conexão, em vez do timeout genérico do Fastify (10s)
+    connectTimeout: 5000,
+    acquireTimeout: 5000,
     allowPublicKeyRetrieval: true, // necessário em alguns setups com MySQL 8
   });
 
